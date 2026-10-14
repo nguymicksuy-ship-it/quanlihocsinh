@@ -1,0 +1,138 @@
+import matplotlib.pyplot as plt
+import pandas as pd
+import streamlit as st
+
+# 1. Tiêu đề ứng dụng
+st.title("QUẢN LÝ ĐIỂM SINH VIÊN")
+
+# 2. Khởi tạo dữ liệu ban đầu
+data = {
+    "Ho_va_ten": [
+        "Nguyen Thai Hoang",
+        "Tran Binh",
+        "Le Minh Anh",
+        "Pham Quoc Dung",
+        "Hoang Thu Ha",
+        "Vo Thanh Nam",
+        "Dang Ngoc Linh",
+        "Bui Gia Bao",
+        "Do Khanh Vy",
+        "Nguyen Duc Minh",
+    ],
+    "Chuyen_can": [9, 8, 10, 6, 7, 9, 8, 5, 10, 6],
+    "Giua_ky": [8, 7, 9, 5, 6, 8, 7, 4, 9, 5],
+    "Cuoi_ky": [9, 8, 9, 4, 7, 9, 8, 5, 10, 6],
+}
+
+df = pd.DataFrame(data)
+
+# Tính điểm tổng kết
+df["Tong_ket"] = (
+    0.2 * df["Chuyen_can"] + 0.3 * df["Giua_ky"] + 0.5 * df["Cuoi_ky"]
+).round(2)
+
+
+# Phân loại sinh viên
+def phan_loai(diem):
+    if diem >= 8.5:
+        return "Giỏi"
+    elif diem >= 7.0:
+        return "Khá"
+    elif diem >= 5.0:
+        return "Trung bình"
+    else:
+        return "Yếu"
+
+
+df["Xep_loai"] = df["Tong_ket"].apply(phan_loai)
+
+# Hiển thị bảng điểm của 10 sinh viên
+st.subheader("📋 Bảng điểm chi tiết của sinh viên")
+st.dataframe(df)
+
+# Thống kê cơ bản của lớp
+diem_tb_lop = df["Tong_ket"].mean()
+max_score = df["Tong_ket"].max()
+min_score = df["Tong_ket"].min()
+
+sv_max = df[df["Tong_ket"] == max_score]
+sv_min = df[df["Tong_ket"] == min_score]
+so_sv_dat = len(df[df["Tong_ket"] >= 5.0])
+
+st.subheader("📊 Thống kê chung của lớp")
+st.write(f"- **Điểm tổng kết trung bình của cả lớp:** `{diem_tb_lop:.2f}`")
+st.write(
+    f"- **Số lượng sinh viên đạt (điểm tổng kết >= 5.0):** `{so_sv_dat} / {len(df)}`"
+)
+
+max_names = ", ".join(sv_max["Ho_va_ten"].tolist())
+st.write(
+    f"- **Sinh viên có điểm tổng kết cao nhất:** `{max_names}` (Điểm: `{max_score}`)"
+)
+
+min_names = ", ".join(sv_min["Ho_va_ten"].tolist())
+st.write(
+    f"- **Sinh viên có điểm tổng kết thấp nhất:** `{min_names}` (Điểm: `{min_score}`)"
+)
+
+# Tra cứu thông tin sinh viên
+st.subheader("🔍 Tra cứu thông tin sinh viên")
+selected_student = st.selectbox(
+    "Chọn sinh viên để xem chi tiết:", df["Ho_va_ten"].tolist()
+)
+
+student_info = df[df["Ho_va_ten"] == selected_student].iloc[0]
+st.markdown(f"### Thông tin chi tiết của: `{selected_student}`")
+st.write(f"- **Chuyên cần:** {student_info['Chuyên_can']}")
+st.write(f"- **Giữa kỳ:** {student_info['Giua_ky']}")
+st.write(f"- **Cuối kỳ:** {student_info['Cuoi_ky']}")
+st.write(f"- **Tổng kết:** {student_info['Tong_ket']}")
+st.write(f"- **Xếp loại:** {student_info['Xep_loai']}")
+
+# Hiển thị biểu đồ điểm tổng kết (Yêu cầu 5)
+st.subheader("📈 Biểu đồ điểm tổng kết của 10 sinh viên")
+fig, ax = plt.subplots(figsize=(10, 6))
+
+short_names = [
+    "Hoang",
+    "Binh",
+    "Anh",
+    "Dung",
+    "Ha",
+    "Nam",
+    "Linh",
+    "Bao",
+    "Vy",
+    "Minh",
+]
+bars = ax.barh(
+    short_names,
+    df["Tong_ket"],
+    color="#6495ED",
+    edgecolor="#1C3879",
+    height=0.6,
+)
+
+ax.set_title(
+    "Biểu đồ điểm tổng kết của 10 sinh viên",
+    fontsize=14,
+    fontweight="bold",
+    pad=15,
+)
+ax.set_xlabel("Điểm tổng kết", fontsize=12, fontweight="bold")
+ax.set_xlim(0, 10)
+
+for bar in bars:
+    width = bar.get_width()
+    ax.text(
+        width + 0.1,
+        bar.get_y() + bar.get_height() / 2.0,
+        f"{width:.1f}",
+        va="center",
+        ha="left",
+        fontsize=10,
+        fontweight="bold",
+    )
+
+ax.grid(axis="x", linestyle="--", alpha=0.6)
+st.pyplot(fig)
